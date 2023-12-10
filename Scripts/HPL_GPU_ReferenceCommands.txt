@@ -29,3 +29,19 @@ pid 1130897's current affinity list: 40-79
 
 Final Summary=
 Final Summary::hpl result is VALID with a GFLOP/s rating of=2.1
+
+
+*********************************************************************************************************************************************************************************
+Simplified reference commands:
+*********************************************************************************************************************************************************************************
+mpiexec -np 1 env OMP_NUM_THREADS=16 /path/to/hpl_executable --dat HPL-dgx-4N.dat
+
+mpirun --mca btl smcuda,self -x UCX_TLS=sm,cuda,cuda_copy,cuda_ipc -np 4 /path/to/hpcg_executable --dat ./hpcg.dat --cpu-affinity 0-31:0-3:32-63:32-63
+
+mpirun --mca btl smcuda,self -x UCX_TLS=sm,cuda,cuda_copy,cuda_ipc -np 1 env OMP_NUM_THREADS=16 /path/to/hpl_executable --dat HPL-dgx-4N.dat
+
+export LD_LIBRARY_PATH=/usr/lib64:$LD_LIBRARY_PATH
+
+singularity pull docker://nvcr.io/nvidia/hpc-benchmarks:23.10
+
+mpiexec -np 4 env OMP_NUM_THREADS=16 /path/to/hpl_executable --dat HPL-dgx-4N.dat
