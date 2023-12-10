@@ -1,0 +1,183 @@
+#Pre-requisites: Clone the git repository:
+(access)$ cd ~/git/github.com/ULHPC/tutorials
+(access)$ git pull
+
+#Now configure a dedicated directory ~/tutorials/HPL for this session
+(access)$ mkdir -p ~/tutorials/HPL
+(access)$ cd ~/tutorials/HPL
+
+# create a symbolic link to the top reference material
+(access)$ ln -s ~/git/github.com/ULHPC/tutorials/parallel/mpi/HPL ref.d
+
+# create other convenient symlinks
+(access)$ ln -s ref.d/Makefile .     # symlink to the root Makefile
+
+#Objectives
+HPL is a portable implementation of the High-Performance Linpack (HPL) Benchmark for Distributed-Memory Computers. It is used as reference benchmark to provide data for the Top500 list and thus rank to supercomputers worldwide. HPL rely on an efficient implementation of the Basic Linear Algebra Subprograms (BLAS). You have several choices at this level:
+
+=>Intel MKL
+=>ATLAS
+=>GotoBlas
+
+=> Intel MPI and the Intel MKL
+=> OpenMPI
+=> ATLAS
+=> GotoBlas
+
+For the sake of time and simplicity, we will focus on the combination expected to lead to the best performant runs, i.e. Intel MKL and Intel MPI suite, either in full MPI or in hybrid run (on 1 or 2 nodes). 
+
+
+#Fetching the HPL sources
+$ cd ~/tutorials/HPL
+$ mkdir src
+# Download the sources
+$ cd src
+# Download the latest version
+$ export HPL_VERSION=2.3
+$ wget --no-check-certificate http://www.netlib.org/benchmark/hpl/hpl-${HPL_VERSION}.tar.gz
+$ tar xvzf hpl-${HPL_VERSION}.tar.gz
+$ cd  hpl-${HPL_VERSION}
+
+
+#Copying the Intel Compilers:
+$ cd ~/tutorials/HPL
+# Copy the provided Make.intel64
+$ cp ref.d/src/Make.intel64 src/
+
+# Load the appropriate module
+$ module load openmpi/intel/4.0.5
+$ module list
+#Intel MKL is now loaded.
+
+#Refer the INSTALL file under src/hpl-2.3. In particular, you'll have to edit and adapt a new makefile Make.intel64 (inspired from setup/Make.Linux_Intel64 typically) and provided to you provided to you on Github for that purpose.
+cd src/hpl-2.3
+cp ../Make.intel64 .
+# OR (if the above command fails)
+# cp ~/git/github.com/ULHPC/tutorials/parallel/mpi/HPL/src/Make.intel64  Make.intel64
+# Automatically adapt at least the TOPdir variable to the current directory $(pwd),
+# thus it SHOULD be run from 'src/hpl-2.3'
+sed -i \
+  -e "s#^[[:space:]]*TOPdir[[:space:]]*=[[:space:]]*.*#TOPdir = $(pwd)#" \
+  Make.intel64
+# Check the difference:
+$ diff -ru ../Make.intel64 Make.intel64
+--- ../Make.intel64     2019-11-19 23:43:26.668794000 +0100
++++ Make.intel64        2019-11-20 00:33:21.077914972 +0100
+@@ -68,7 +68,7 @@
+ # - HPL Directory Structure / HPL library ------------------------------
+ # ----------------------------------------------------------------------
+ #
+-TOPdir       = $(HOME)/benchmarks/HPL/src/hpl-2.3
++TOPdir = /home/users/svarrette/tutorials/HPL/src/hpl-2.3
+ INCdir       = $(TOPdir)/include
+ BINdir       = $(TOPdir)/bin/$(ARCH)
+ LIBdir       = $(TOPdir)/lib/$(ARCH)
+In general, to build HPL, you first need to configure correctly the file Make.intel64. Take your favorite editor (vim, nano, etc.) to modify it. In particular, you should adapt:
+
+TOPdir to point to the directory holding the HPL sources (i.e. where you uncompress them: $(HOME)/tutorials/HPL/src/hpl-2.3)
+this was done using the above sed command
+Adapt the MP* variables to point to the appropriate MPI libraries path.
+Correct the OpenMP definitions OMP_DEFS
+(eventually) adapt the CCFLAGS
+in particular, with the Intel compiling suite, you SHOULD at least add -xHost to ensure the compilation that will auto-magically use the appropriate compilation flags -- see (again) the Intel Math Kernel Library Link Line Advisor
+(eventually) adapt the ARCH variable
+Here is for instance a suggested difference for intel MPI:
+
+--- setup/Make.Linux_Intel64    1970-01-01 06:00:00.000000000 +0100
++++ Make.intel64        2019-11-20 00:15:11.938815000 +0100
+@@ -61,13 +61,13 @@
+ # - Platform identifier ------------------------------------------------
+ # ----------------------------------------------------------------------
+ #
+-ARCH         = Linux_Intel64
++ARCH         = $(arch)
+ #
+ # ----------------------------------------------------------------------
+ # - HPL Directory Structure / HPL library ------------------------------
+ # ----------------------------------------------------------------------
+ #
+-TOPdir       = $(HOME)/hpl
++TOPdir       = $(HOME)/tutorials/HPL/src/hpl-2.3
+ INCdir       = $(TOPdir)/include
+ BINdir       = $(TOPdir)/bin/$(ARCH)
+ LIBdir       = $(TOPdir)/lib/$(ARCH)
+@@ -81,9 +81,9 @@
+ # header files,  MPlib  is defined  to be the name of  the library to be
+ # used. The variable MPdir is only used for defining MPinc and MPlib.
+ #
+-# MPdir        = /opt/intel/mpi/4.1.0
+-# MPinc        = -I$(MPdir)/include64
+-# MPlib        = $(MPdir)/lib64/libmpi.a
++MPdir        = $(I_MPI_ROOT)/intel64
++MPinc        = -I$(MPdir)/include
++MPlib        = $(MPdir)/lib/libmpi.a
+ #
+ # ----------------------------------------------------------------------
+ # - Linear Algebra library (BLAS or VSIPL) -----------------------------
+@@ -177,9 +178,9 @@
+ #
+ CC       = mpiicc
+ CCNOOPT  = $(HPL_DEFS)
+-OMP_DEFS = -openmp
+-CCFLAGS  = $(HPL_DEFS) -O3 -w -ansi-alias -i-static -z noexecstack -z relro -z now -nocompchk -Wall
+-#
++OMP_DEFS = -qopenmp
++CCFLAGS  = $(HPL_DEFS) -O3 -w -ansi-alias -i-static -z noexecstack -z relro -z now -nocompchk -Wall -xHost
++
+ #
+ # On some platforms,  it is necessary  to use the Fortran linker to find
+ # the Fortran internals used in the BLAS library.
+Once tweaked, run the compilation by:
+
+$> make arch=intel64 clean_arch_all
+$> make arch=intel64
+If you don't succeed by yourself, use the following Make.intel64.
+
+$> cd ~/tutorials/HPL/src/hpl-2.3/bin/intel64
+$> cat HPL.dat      # Default (dummy) HPL.dat  input file
+
+Full MPI, with 1 MPI process per (physical) core reserved.
+As mentioned in the basics Parallel computations with OpenMP/MPI tutorial, it means that you'll typically reserve the nodes using the -N <#nodes> --ntasks-per-node 28 options for Slurm as there are in general 28 cores per nodes on iris.
+Hybrid OpenMP+MPI, with 1 MPI process per CPU socket, and as many OpenMP threads as per (physical) core reserved.
+As mentioned in the basics Parallel computations with OpenMP/MPI tutorial, it means that you'll typically reserve the nodes using the -N <#nodes> --ntasks-per-node 2 --ntasks-per-socket 1 -c 14 options for Slurm there are in general 2 processors (each with 14 cores) per nodes on iris
+These two contexts will directly affect the values for the HPL parameters P and Q since their product should match the total number of MPI processes.
+
+HPL main parameters
+Running HPL depends on a configuration file HPL.dat -- an example is provided in the building directory i.e. src/hpl-2.3/bin/intel64/HPL.dat.
+
+$> cat src/hpl-2.3/bin/intel64/HPL.dat
+HPLinpack benchmark input file
+Innovative Computing Laboratory, University of Tennessee
+HPL.out      output file name (if any)
+6            device out (6=stdout,7=stderr,file)
+4            # of problems sizes (N)
+29 30 34 35  Ns
+4            # of NBs
+1 2 3 4      NBs
+0            PMAP process mapping (0=Row-,1=Column-major)
+3            # of process grids (P x Q)
+2 1 4        Ps
+2 4 1        Qs
+16.0         threshold
+3            # of panel fact
+0 1 2        PFACTs (0=left, 1=Crout, 2=Right)
+2            # of recursive stopping criterium
+2 4          NBMINs (>= 1)
+1            # of panels in recursion
+2            NDIVs
+3            # of recursive panel fact.
+0 1 2        RFACTs (0=left, 1=Crout, 2=Right)
+1            # of broadcast
+0            BCASTs (0=1rg,1=1rM,2=2rg,3=2rM,4=Lng,5=LnM)
+1            # of lookahead depth
+0            DEPTHs (>=0)
+2            SWAP (0=bin-exch,1=long,2=mix)
+64           swapping threshold
+0            L1 in (0=transposed,1=no-transposed) form
+0            U  in (0=transposed,1=no-transposed) form
+1            Equilibration (0=no,1=yes)
+8            memory alignment in double (> 0)
+See http://www.netlib.org/benchmark/hpl/tuning.html for a description of this file and its parameters (see also the authors tips).
+
+
+[sc9948@cs001 intel64]$ srun --nodes=1 --tasks-per-node=12 --mem=40GB ./xhpl
