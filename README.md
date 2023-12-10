@@ -18,3 +18,4 @@ https://sites.google.com/d/15AKv-a_octFRLnq2cQMI4QEIzoesJP9n/p/1j8_qL093wfQeli9r
 2. Competition Webpage: https://sc23.supercomputing.org/students/student-cluster-competition/
 3. Competition Rules: https://www.studentclustercompetition.us/2023/SCC23Rules.pdf
 4. Benchmarking Tutorials:https://www.youtube.com/watch?v=bUdYAtbQ7I0, https://www.studentclustercompetition.us/2023/Webinars/Benchmarks/SCC23-Benchmarks-Webinar.pdf.
+5. Intel MKL Tutorial: https://www.intel.com/content/www/us/en/docs/onemkl/developer-guide-linux/2024-0/overview.html
