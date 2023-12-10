@@ -10,7 +10,9 @@ This Repository contains our notes for the HPL benchmark test executed on the NY
 https://sites.google.com/d/15AKv-a_octFRLnq2cQMI4QEIzoesJP9n/p/1j8_qL093wfQeli9rWhR0NRcq6sleSQQd/edit?pli=1
 
 
+**Meeting Sync Notes:**
 
+https://docs.google.com/document/d/1VpIJSQFqR480dc8pBi0nJmcphSakbJNF5S48zF3Yifs/edit#heading=h.qhnl00przc50
 
 ***Some Additional Reference Links:***
 
