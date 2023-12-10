@@ -1,0 +1,49 @@
+HPC Nvidia
+
+4 A100 GPUs are used to run the optimized version of HPL on Nvidia GPU by generating an executable.
+Link: https://catalog.ngc.nvidia.com/orgs/nvidia/containers/hpc-benchmarks
+Note: Using the Nvidia optimized version requires the use of singularity.
+
+# reserve 4 GPU node
+srun --cpus-per-task=64 --threads-per-core=1 --mem=400GB --time=04:00:00 --exclusive --gres=gpu:a100:4 --pty /bin/bash
+
+#Removing Slurm:
+To avoid conflicts between slurm and mpirun, we need to remove slurm from the GPU node before running mpirun. Otherwise, when mpirun tries to create 4 processes, slurm will block this request, resulting in only one process being available.
+for e in $(env | egrep ^SLURM_ | cut -d= -f1); do unset $e; done
+
+
+# Go to the target folder, where the HPL.dat exist.
+cd $SCRATCH/sc9948/tutorial
+
+#Start singularity (with --nv flag)
+singularity exec --nv /scratch/work/public/singularity/nvidia-hpc-benchmarks-23.5.sif /bin/bash
+MPIRUN. 1. 4 process; 2. 16 cpu tasks per process;
+
+# run
+mpirun --mca btl smcuda,self -x UCX_TLS=sm,cuda,cuda_copy,cuda_ipc -np 4 /workspace/hpl.sh --dat ./hpl.dat  --cpu-affinity 0-15:16-31:32-47:48-63
+
+
+We can check gpu status by following command.
+
+# go to ga004
+[sc9948@ga004 ~]$ for p in $(pidof xhpl); do taskset -pc $p; done
+pid 799656's current affinity list: 48-63
+pid 799653's current affinity list: 0-15
+pid 799652's current affinity list: 32-47
+pid 799651's current affinity list: 16-31
+
++---------------------------------------------------------------------------------------+
+| Processes:                                                                            |
+|  GPU   GI   CI        PID   Type   Process name                            GPU Memory |
+|        ID   ID                                                             Usage      |
+|=======================================================================================|
+|    0   N/A  N/A    799653      C   /workspace/hpl-linux-x86_64/xhpl        15673MiB |
+|    1   N/A  N/A    799651      C   /workspace/hpl-linux-x86_64/xhpl        15673MiB |
+|    2   N/A  N/A    799652      C   /workspace/hpl-linux-x86_64/xhpl        15673MiB |
+|    3   N/A  N/A    799656      C   /workspace/hpl-linux-x86_64/xhpl        15673MiB |
++---------------------------------------------------------------------------------------+
+
+# update smi per 4 second 
+nvidia-smi -l 4
+
+/scratch/work/public/singularity/run-nvtop-3.0.0.bash nvtop
