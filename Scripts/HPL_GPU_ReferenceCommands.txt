@@ -1,0 +1,31 @@
+https://infohub.delltechnologies.com/p/accelerating-hpc-workloads-with-nvidia-a100-nvlink-on-dell-poweredge-xe8545/
+https://infohub.delltechnologies.com/p/hpc-application-performance-on-dell-poweredge-r7525-servers-with-nvidia-a100-gpgpus-1/
+https://www.pugetsystems.com/labs/hpc/outstanding-performance-of-nvidia-a100-pcie-on-hpl-hpl-ai-hpl-benchmarks-2149/
+https://catalog.ngc.nvidia.com/orgs/nvidia/containers/hpc-benchmarks
+
+
+singularity exec --nv /scratch/work/public/singularity/nvidia-hpc-benchmarks-23.5.sif /bin/bash
+
+cp -rp /workspace/hpl-linux-x86_64/sample-dat/hpl.dat . 
+
+#HPL
+
+mpirun --mca btl smcuda,self -x UCX_TLS=sm,cuda,cuda_copy,cuda_ipc -np 2 hpl.sh --dat ./HPL.dat --cpu-affinity 0:0 --cpu-cores-per-rank 4 --gpu-affinity 0:1
+
+#HPL-AI
+
+mpirun --mca btl smcuda,self -x MELLANOX_VISIBLE_DEVICES="none" -x UCX_TLS=sm,cuda,cuda_copy,cuda_ipc -np 2 hpl.sh --xhpl-ai --dat ./HPL.dat --cpu-affinity 0:0 --cpu-cores-per-rank 4 --gpu-affinity 0:1
+
+
+
+
+[sc9948@log-2 ~]$ for p in $(pidof xhpl); do taskset -pc $p; done
+pid 1130928's current affinity list: 40-79
+pid 1130927's current affinity list: 0-39
+pid 1130922's current affinity list: 0-39
+pid 1130897's current affinity list: 40-79
+[sc9948@log-2 ~]$ 
+
+
+Final Summary=
+Final Summary::hpl result is VALID with a GFLOP/s rating of=2.1
